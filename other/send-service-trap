@@ -1,0 +1,48 @@
+#!/bin/sh
+export LANG=zh_CN.utf-8
+##----------------LOGFILE=/home/zabbix/scripts/send-service-trap##
+today=`date +%Y%m%d`
+LOGFILE="/zabbix/alertscripts/"$today"send-service-trap.log"
+################################################################
+#echo "A:$1" >>$LOGFILE
+#echo "B:$2" >>$LOGFILE
+#echo "C:$3" >>$LOGFILE
+
+IPADDR=`echo "$2"|cut -d ';' -f1`
+SEVERITY=`echo "$2"|cut -d ';' -f3`
+
+DESC=`echo "$2"|cut -d ';' -f4`
+OID=`echo "$3"|grep Original|grep -v grep|cut -d : -f2`
+STATE=`echo "$3"|grep "Trigger status"|grep -v grep|cut -d : -f2`
+STATE=`echo $STATE|tr -d "\r"`
+TITLE=`echo "$DESC"|cut -d ',' -f1`
+
+#TITLE= `echo $TITLE|iconv -f utf-8 -t gbk`
+#echo "title:$TITLE"                         >>$LOGFILE
+
+
+echo "hostname:$IPADDR"                            >>$LOGFILE
+echo "title:$TITLE"                         >>$LOGFILE
+echo "desc:$DESC"                         >>$LOGFILE
+echo "oid:$OID"                      >>$LOGFILE
+echo "severity:$SEVERITY" >>$LOGFILE
+echo "state:$STATE"                       >>$LOGFILE
+
+#STATE=OK
+case $STATE in
+"OK")
+echo "case ok" >>$LOGFILE 
+;;
+
+*)  
+STATE=$SEVERITY
+;;
+esac
+
+echo "/zabbix/alertscripts/alert2redis.py $IPADDR $OID $STATE \"$TITLE\" \"$DESC\"" >>$LOGFILE
+
+/zabbix/alertscripts/alert2redis.py "$IPADDR" $OID $STATE "$TITLE" "$DESC"
+
+echo `date +%Y%m%d-%H:%M:%S`    >>$LOGFILE
+echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" >>$LOGFILE
+
